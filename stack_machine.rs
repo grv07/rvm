@@ -1,13 +1,21 @@
 // # https://en.wikipedia.org/wiki/Stack_machine
 
+const SIZE: usize = 2;
+
 #[repr(usize)]
 enum Op {
-    NoOp,
     Push(i32),
     Pop,
     Add,
     Sub,
     Mul,
+}
+
+#[derive(Debug)]
+enum MachineErr {
+    StackOverflow,
+    StackUnderflow,
+    IlligalInstruction,
 }
 
 #[derive(Debug)]
@@ -24,55 +32,74 @@ impl<const T: usize> Machine<T> {
         }
     }
 
-    fn step(&mut self, op: Op) -> Option<i32> {
+    fn step(&mut self, op: Op) -> Result<(), MachineErr> {
         match op {
-            Op::NoOp => {
-                println!("No operation");
-                None
-            }
             Op::Push(v) => {
+                if self.ip >= SIZE {
+                    return Err(MachineErr::StackOverflow);
+                }
                 self.stack[self.ip] = v;
                 self.ip += 1;
-                None
+                Ok(())
             }
+
             Op::Pop => {
-                let v = self.stack[self.ip - 1];
+                if self.ip == 0 {
+                    return Err(MachineErr::StackUnderflow);
+                }
+
+                let _v = self.stack[self.ip - 1];
                 self.ip -= 1;
-                return Some(v);
+                Ok(())
             }
+
             Op::Add => {
-                if let (Some(a), Some(b)) = (self.step(Op::Pop), self.step(Op::Pop)) {
-                    let res = a + b;
-                    self.step(Op::Push(res))
-                } else {
-                    eprintln!("Add is not a valid operation on current state of stack ");
-                    None
+                if self.ip < 2 {
+                    return Err(MachineErr::StackUnderflow);
                 }
+
+                let a = self.stack[self.ip - 1];
+                self.ip -= 1;
+                let b = self.stack[self.ip - 1];
+                self.ip -= 1;
+
+                self.step(Op::Push(a + b))
             }
+
             Op::Sub => {
-                if let (Some(a), Some(b)) = (self.step(Op::Pop), self.step(Op::Pop)) {
-                    let res = a - b;
-                    self.step(Op::Push(res))
-                } else {
-                    eprintln!("Add is not a valid operation on current state of stack ");
-                    None
+                if self.ip < 2 {
+                    return Err(MachineErr::StackUnderflow);
                 }
+
+                let a = self.stack[self.ip - 1];
+                self.ip -= 1;
+                let b = self.stack[self.ip - 1];
+                self.ip -= 1;
+
+                self.step(Op::Push(a - b))
             }
+
             Op::Mul => {
-                if let (Some(a), Some(b)) = (self.step(Op::Pop), self.step(Op::Pop)) {
-                    let res = a * b;
-                    self.step(Op::Push(res))
-                } else {
-                    eprintln!("Add is not a valid operation on current state of stack ");
-                    None
+                if self.ip < 2 {
+                    return Err(MachineErr::StackUnderflow);
                 }
+
+                let a = self.stack[self.ip - 1];
+                self.ip -= 1;
+                let b = self.stack[self.ip - 1];
+                self.ip -= 1;
+
+                self.step(Op::Push(a * b))
             }
+
+            _ => Err(MachineErr::IlligalInstruction),
         }
     }
 
     fn dump(&self) {
-        for i in &self.stack {
-            print!("{i}, ");
+        print!("STACK: [");
+        for i in 0..self.ip {
+            print!("{}, ", self.stack[i]);
         }
         print!("]");
 
@@ -81,7 +108,6 @@ impl<const T: usize> Machine<T> {
 }
 
 fn main() {
-    const SIZE: usize = 16;
     let mut m = Machine::<SIZE>::new();
 
     for ins in [
@@ -89,14 +115,18 @@ fn main() {
         Op::Push(2),
         Op::Push(3),
         Op::Sub,
-        Op::NoOp,
         Op::Mul,
         Op::Push(4),
         Op::Push(5),
         Op::Add,
         Op::Add,
     ] {
-        m.step(ins);
-        m.dump();
+        match m.step(ins) {
+            Ok(()) => m.dump(),
+            Err(e) => {
+                eprintln!("Error: {:?}", e);
+                break;
+            }
+        }
     }
 }
