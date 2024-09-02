@@ -1,4 +1,7 @@
-// # https://en.wikipedia.org/wiki/Stack_machine
+//  https://en.wikipedia.org/wiki/Stack_machine
+
+use std::fs;
+use std::str::FromStr;
 
 const SIZE: usize = 24;
 const PROG_SIZE: usize = 25;
@@ -17,6 +20,39 @@ enum Op {
     Halt,
 }
 
+impl FromStr for Op {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let ops = s.trim().split(' ').collect::<Vec<&str>>();
+
+        let op = match ops[0] {
+            "push" if ops.len() == 2 => Ok(Op::Push(
+                ops[1].parse::<i32>().expect("Error: when parsing push"),
+            )),
+
+            "jump" if ops.len() == 2 => Ok(Op::Jump(
+                ops[1].parse::<usize>().expect("Error: when parsing jump"),
+            )),
+
+            "dup" if ops.len() == 2 => Ok(Op::Dup(
+                ops[1].parse::<usize>().expect("Error: when parsing dup"),
+            )),
+
+            "pop" => Ok(Op::Pop),
+            "add" => Ok(Op::Add),
+            "sub" => Ok(Op::Sub),
+            "mul" => Ok(Op::Mul),
+            "halt" => Ok(Op::Halt),
+            "noop" => Ok(Op::NoOp),
+
+            _ => Err(format!("Error: Unable to parse {s:?}")),
+        };
+
+        op
+    }
+}
+
 #[derive(Debug)]
 enum MachineErr {
     StackOverflow,
@@ -31,6 +67,8 @@ struct Machine<const N: usize> {
 
     program: Vec<Op>, //Program stack as list of instructions
     ip: usize,        // Instruction Pointer
+
+    halt: bool,
 }
 
 impl<const T: usize> Machine<T> {
@@ -41,6 +79,7 @@ impl<const T: usize> Machine<T> {
 
             program,
             ip: 0,
+            halt: false,
         }
     }
 
@@ -136,6 +175,11 @@ impl<const T: usize> Machine<T> {
                 Ok(())
             }
 
+            Op::Halt => {
+                self.halt = true;
+                Ok(())
+            }
+
             _ => Err(MachineErr::IlligalInstruction),
         }
     }
@@ -151,34 +195,28 @@ impl<const T: usize> Machine<T> {
     }
 }
 
+fn read_source_file(sf: &str) -> Vec<Op> {
+    let f = fs::read_to_string(sf).expect("Error: Unable to read file {sf:?}");
+
+    let t = f
+        .trim()
+        .split('\n')
+        .map(|x| Op::from_str(x).unwrap())
+        .collect::<Vec<Op>>();
+
+    t
+}
+
 fn main() {
-    let _program = vec![
-        Op::Push(1),
-        Op::Push(2),
-        Op::Push(3),
-        Op::Dup(3),
-        Op::Sub,
-        Op::Mul,
-        Op::Push(4),
-        Op::Push(5),
-        Op::Add,
-        Op::Add,
-        Op::Halt,
-    ];
+    let prog = read_source_file("basic.vm");
 
-    let program = vec![
-        Op::Push(0),
-        Op::Push(1),
-        Op::Dup(1),
-        Op::Dup(1),
-        Op::Add,
-        Op::Jump(2),
-        Op::Halt,
-    ];
-
-    let mut m = Machine::<SIZE>::new(program);
+    let mut m = Machine::<SIZE>::new(prog);
 
     for _ in 0..PROG_SIZE {
+        if m.halt {
+            break;
+        }
+
         match m.step() {
             Ok(()) => m.dump(),
             Err(e) => {

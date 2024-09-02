@@ -1,0 +1,13 @@
+push 1
+push 2
+push 3
+dup 2
+sub 
+mul 
+push 4
+push 5
+add 
+add
+add
+halt 
+
