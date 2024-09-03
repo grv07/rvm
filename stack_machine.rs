@@ -217,6 +217,7 @@ fn main() {
 
     if file_name.is_none() {
         eprintln!("USAGE: ./stack_machine *.vm");
+        eprintln!("ERROR: Expect a input");
         return;
     }
 
