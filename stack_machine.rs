@@ -57,7 +57,6 @@ impl FromStr for Op {
 enum MachineErr {
     StackOverflow,
     StackUnderflow,
-    IlligalInstruction,
 }
 
 #[derive(Debug)]
@@ -177,10 +176,14 @@ impl<const T: usize> Machine<T> {
 
             Op::Halt => {
                 self.halt = true;
+                self.ip += 1;
                 Ok(())
             }
 
-            _ => Err(MachineErr::IlligalInstruction),
+            Op::NoOp => {
+                self.ip += 1;
+                Ok(())
+            }
         }
     }
 
@@ -208,7 +211,16 @@ fn read_source_file(sf: &str) -> Vec<Op> {
 }
 
 fn main() {
-    let prog = read_source_file("basic.vm");
+    let mut e = std::env::args().into_iter();
+
+    let file_name = e.nth(1);
+
+    if file_name.is_none() {
+        eprintln!("USAGE: ./stack_machine *.vm");
+        return;
+    }
+
+    let prog = read_source_file(&file_name.unwrap());
 
     let mut m = Machine::<SIZE>::new(prog);
 
