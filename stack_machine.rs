@@ -1,6 +1,7 @@
 //  https://en.wikipedia.org/wiki/Stack_machine
 
 use std::fs;
+use std::io::Write;
 use std::str::FromStr;
 
 const SIZE: usize = 24;
@@ -20,11 +21,35 @@ enum Op {
     Halt,
 }
 
+impl ToString for Op {
+    fn to_string(&self) -> String {
+        match self {
+            Op::Push(v) => format!("push {}\n", v),
+            Op::Jump(v) => format!("jump {}\n", v),
+            Op::Dup(v) => format!("dup {}\n", v),
+
+            Op::Add => String::from("add\n"),
+            Op::Sub => String::from("sub\n"),
+            Op::Mul => String::from("mul\n"),
+            Op::Pop => String::from("pop\n"),
+
+            Op::Halt => String::from("halt\n"),
+            Op::NoOp => String::from("noop\n"),
+        }
+    }
+}
+
 impl FromStr for Op {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let ops = s.trim().split(' ').collect::<Vec<&str>>();
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        let line = if line.contains('#') {
+            line.split('#').nth(0).expect("Unable to parse")
+        } else {
+            line
+        };
+
+        let ops = line.trim().split(&[' ']).collect::<Vec<&str>>();
 
         let op = match ops[0] {
             "push" if ops.len() == 2 => Ok(Op::Push(
@@ -46,7 +71,7 @@ impl FromStr for Op {
             "halt" => Ok(Op::Halt),
             "noop" => Ok(Op::NoOp),
 
-            _ => Err(format!("Error: Unable to parse {s:?}")),
+            _ => Err(format!("Error: Unable to parse {line}")),
         };
 
         op
@@ -80,6 +105,20 @@ impl<const T: usize> Machine<T> {
             ip: 0,
             halt: false,
         }
+    }
+
+    fn save_prog_to_file(&self, file: &str) -> Result<usize, std::io::Error> {
+        let mut f = fs::File::create(file)?;
+
+        let mut p = self.program.iter().map(|v| v.to_string());
+
+        while let Some(v) = p.next() {
+            let _ = f.write_all(v.as_bytes())?;
+        }
+
+        f.flush()?;
+
+        Ok(0)
     }
 
     fn step(&mut self) -> Result<(), MachineErr> {
@@ -204,6 +243,7 @@ fn read_source_file(sf: &str) -> Vec<Op> {
     let t = f
         .trim()
         .split('\n')
+        .filter(|x| !x.starts_with('#'))
         .map(|x| Op::from_str(x).unwrap())
         .collect::<Vec<Op>>();
 
@@ -238,4 +278,6 @@ fn main() {
             }
         }
     }
+
+    let _ = m.save_prog_to_file("game.bin");
 }
