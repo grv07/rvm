@@ -1,8 +1,8 @@
 //  https://en.wikipedia.org/wiki/Stack_machine
 
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
-use std::str::FromStr;
 
 const SIZE: usize = 24;
 const PROG_SIZE: usize = 25;
@@ -39,10 +39,10 @@ impl ToString for Op {
     }
 }
 
-impl FromStr for Op {
-    type Err = String;
+impl Op {
+    fn to_op(line: &str, lt: &HashMap<String, usize>) -> Result<Self, String> {
+        println!("{line}");
 
-    fn from_str(line: &str) -> Result<Self, Self::Err> {
         let line = if line.contains('#') {
             line.split('#').nth(0).expect("Unable to parse")
         } else {
@@ -56,9 +56,17 @@ impl FromStr for Op {
                 ops[1].parse::<i32>().expect("Error: when parsing push"),
             )),
 
-            "jump" if ops.len() == 2 => Ok(Op::Jump(
-                ops[1].parse::<usize>().expect("Error: when parsing jump"),
-            )),
+            "jump" if ops.len() == 2 => match ops[1].parse::<usize>() {
+                Ok(v) => Ok(Op::Jump(v)),
+                Err(_) => {
+                    let v = ops[1];
+                    if let Some(v) = lt.get(v) {
+                        Ok(Op::Jump(*v))
+                    } else {
+                        Err(format!("Error: Unable to parse label/index for jump {v}"))
+                    }
+                }
+            },
 
             "dup" if ops.len() == 2 => Ok(Op::Dup(
                 ops[1].parse::<usize>().expect("Error: when parsing dup"),
@@ -71,7 +79,7 @@ impl FromStr for Op {
             "halt" => Ok(Op::Halt),
             "noop" => Ok(Op::NoOp),
 
-            _ => Err(format!("Error: Unable to parse {line}")),
+            _ => Err(format!("Error: Unable to parse > {line}")),
         };
 
         op
@@ -238,16 +246,30 @@ impl<const T: usize> Machine<T> {
 }
 
 fn read_source_file(sf: &str) -> Vec<Op> {
-    let f = fs::read_to_string(sf).expect("Error: Unable to read file {sf:?}");
+    let vm_file = fs::read_to_string(sf).expect("Error: Unable to read file {sf:?}");
 
-    let t = f
+    let ops = vm_file
         .trim()
         .split('\n')
         .filter(|x| !x.starts_with('#'))
-        .map(|x| Op::from_str(x).unwrap())
+        .filter(|x| !x.is_empty());
+
+    let lable_table = ops
+        .clone()
+        .enumerate()
+        .map(|(i, v)| (v, i))
+        .filter(|(v, _)| v.ends_with(':'))
+        .map(|(v, i)| (v.replace(':', ""), i))
+        .collect::<std::collections::HashMap<_, _>>();
+
+    println!("{lable_table:?}");
+
+    let ops = ops
+        .filter(|v| !v.ends_with(':'))
+        .map(|x| Op::to_op(x, &lable_table).unwrap())
         .collect::<Vec<Op>>();
 
-    t
+    ops
 }
 
 fn main() {

@@ -1,9 +1,10 @@
 #start feb
 push 0 # side comment
 push 1
-dup 1
-dup 1
-add
-# jump state
-jump 2
+
+loop:
+	dup 1
+	dup 1
+	add
+	jump loop # jump state
 halt
