@@ -1,10 +1,10 @@
 #start feb
-push 0 # side comment
-push 1
+push 0.0 # side comment
+push 1.0
 
 loop:
 	dup 1
 	dup 1
-	addi
+	addf
 	jump loop # jump state
 halt
