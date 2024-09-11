@@ -5,11 +5,11 @@ mod word;
 use ins::Ins;
 use std::fs;
 use std::io::Write;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 use word::Word;
 
 const SIZE: usize = 24;
-const PROG_SIZE: usize = 25;
+const PROG_SIZE: usize = 1000;
 
 #[derive(Debug)]
 enum MachineErr {
@@ -109,7 +109,7 @@ impl<const T: usize> Machine<T> {
                     return Err(MachineErr::StackUnderflow);
                 }
 
-                self.stack[self.sp - 1] =
+                self.stack[self.sp - 2] =
                     Word::Boolean(self.stack[self.sp - 1] >= self.stack[self.sp - 2]);
 
                 self.sp -= 1;
@@ -169,6 +169,23 @@ impl<const T: usize> Machine<T> {
                 Ok(())
             }
 
+            Ins::DivI => {
+                if self.sp < 2 {
+                    return Err(MachineErr::StackUnderflow);
+                }
+
+                let a = self.stack[self.sp - 1];
+                self.sp -= 1;
+                let b = self.stack[self.sp - 1];
+                self.sp -= 1;
+
+                self.stack[self.sp] = a.div(b).unwrap();
+                self.sp += 1;
+                self.ip += 1;
+
+                Ok(())
+            }
+
             Ins::AddF => {
                 if self.sp < 2 {
                     return Err(MachineErr::StackUnderflow);
@@ -220,8 +237,36 @@ impl<const T: usize> Machine<T> {
                 Ok(())
             }
 
+            Ins::DivF => {
+                if self.sp < 2 {
+                    return Err(MachineErr::StackUnderflow);
+                }
+
+                let a = self.stack[self.sp - 1];
+                self.sp -= 1;
+                let b = self.stack[self.sp - 1];
+                self.sp -= 1;
+
+                self.stack[self.sp] = a.div(b).unwrap();
+                self.sp += 1;
+                self.ip += 1;
+
+                Ok(())
+            }
+
             Ins::Jump(v) => {
                 self.ip = v;
+
+                Ok(())
+            }
+
+            Ins::JumpIf(v) => {
+                if self.stack[self.sp - 1].is_true() {
+                    self.sp -= 1;
+                    self.ip = v;
+                } else {
+                    self.ip += 1;
+                }
 
                 Ok(())
             }
@@ -251,7 +296,7 @@ impl<const T: usize> Machine<T> {
     fn dump(&self) {
         print!("STACK: [");
         for i in 0..self.sp {
-            print!("{}, ", self.stack[i]);
+            print!("{:?}, ", self.stack[i]);
         }
         print!("]");
 

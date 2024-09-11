@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt;
 use std::fmt::Display;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum Word {
@@ -9,6 +9,17 @@ pub enum Word {
     Boolean(bool),
     Int(i64),
     Usize(usize),
+}
+
+impl Word {
+    pub fn is_true(&self) -> bool {
+        match self {
+            Word::Float(x) => *x > 0.0,
+            Word::Int(x) => *x > 0,
+            Word::Usize(x) => *x > 0,
+            Word::Boolean(x) => *x,
+        }
+    }
 }
 
 impl Display for Word {
@@ -73,6 +84,21 @@ impl Mul for Word {
             (Word::Float(a), Word::Float(b)) => Ok(Word::Float(a * b)),
             _ => Err(format!(
                 "Error: Operation Mul not supported yet for {:?} {:?}",
+                self, other
+            )),
+        }
+    }
+}
+
+impl Div for Word {
+    type Output = Result<Self, String>;
+
+    fn div(self, other: Word) -> Result<Self, String> {
+        match (self, other) {
+            (Word::Int(a), Word::Int(b)) => Ok(Word::Int(a / b)),
+            (Word::Float(a), Word::Float(b)) => Ok(Word::Float(a / b)),
+            _ => Err(format!(
+                "Error: Operation Div not supported yet for {:?} {:?}",
                 self, other
             )),
         }
