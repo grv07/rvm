@@ -1,11 +1,25 @@
 use std::convert::TryFrom;
+use std::fmt;
+use std::fmt::Display;
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum Word {
     Float(f64),
+    Boolean(bool),
     Int(i64),
     Usize(usize),
+}
+
+impl Display for Word {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Word::Float(x) => write!(f, "{}", x),
+            Word::Int(x) => write!(f, "{}", x),
+            Word::Usize(x) => write!(f, "{}", x),
+            Word::Boolean(x) => write!(f, "{}", x),
+        }
+    }
 }
 
 impl TryFrom<&str> for Word {

@@ -82,6 +82,42 @@ impl<const T: usize> Machine<T> {
                 Ok(())
             }
 
+            Ins::Swap(v) => {
+                if self.sp < v {
+                    return Err(MachineErr::StackUnderflow);
+                }
+
+                let temp = self.stack[self.sp - 1 - v];
+                self.stack[self.sp - 1 - v] = self.stack[self.sp - 1];
+                self.stack[self.sp - 1] = temp;
+
+                self.ip += 1;
+
+                Ok(())
+            }
+
+            Ins::Not => {
+                // self.stack[self.sp - 1] = Word::Boolean(self.stack[self.sp - 1]);
+
+                self.ip += 1;
+
+                Ok(())
+            }
+
+            Ins::Gef => {
+                if self.sp < 2 {
+                    return Err(MachineErr::StackUnderflow);
+                }
+
+                self.stack[self.sp - 1] =
+                    Word::Boolean(self.stack[self.sp - 1] >= self.stack[self.sp - 2]);
+
+                self.sp -= 1;
+                self.ip += 1;
+
+                Ok(())
+            }
+
             Ins::AddI => {
                 if self.sp < 2 {
                     return Err(MachineErr::StackUnderflow);
@@ -215,7 +251,7 @@ impl<const T: usize> Machine<T> {
     fn dump(&self) {
         print!("STACK: [");
         for i in 0..self.sp {
-            print!("{:?}, ", self.stack[i]);
+            print!("{}, ", self.stack[i]);
         }
         print!("]");
 

@@ -15,18 +15,25 @@ pub enum Ins {
     AddF,
     SubF,
     MulF,
+    Gef,
+    Not,
 
     Jump(usize),
     Dup(usize),
+    Swap(usize),
     Halt,
 }
 
 impl ToString for Ins {
     fn to_string(&self) -> String {
         match self {
-            Ins::Push(v) => format!("push {:?}\n", v),
-            Ins::Jump(v) => format!("jump {:?}\n", v),
-            Ins::Dup(v) => format!("dup {:?}\n", v),
+            Ins::Push(v) => format!("push {}\n", v),
+            Ins::Jump(v) => format!("jump {}\n", v),
+            Ins::Dup(v) => format!("dup {}\n", v),
+            Ins::Swap(v) => format!("swap {}\n", v),
+
+            Ins::Gef => String::from("gef\n"),
+            Ins::Not => String::from("not\n"),
 
             Ins::AddI => String::from("addi\n"),
             Ins::SubI => String::from("subi\n"),
@@ -62,6 +69,10 @@ impl Ins {
                 Ok(Ins::Push(word))
             }
 
+            "swap" if ops.len() == 2 => Ok(Ins::Swap(
+                ops[1].parse::<usize>().expect("Error: when parsing swap"),
+            )),
+
             "jump" if ops.len() == 2 => match ops[1].parse::<usize>() {
                 Ok(v) => Ok(Ins::Jump(v)),
                 Err(_) => {
@@ -79,6 +90,8 @@ impl Ins {
             )),
 
             "pop" => Ok(Ins::Pop),
+            "gef" => Ok(Ins::Gef),
+            "not" => Ok(Ins::Not),
 
             "addi" => Ok(Ins::AddI),
             "subi" => Ok(Ins::SubI),
