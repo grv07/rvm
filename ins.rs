@@ -70,7 +70,7 @@ impl Ins {
 
         let ops = line.trim().split(&[' ']).collect::<Vec<&str>>();
 
-        println!(" == {:?}", ops);
+        println!("{:?}", ops);
 
         let op = match ops[0] {
             "push" if ops.len() == 2 => {

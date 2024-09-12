@@ -9,7 +9,6 @@ use std::ops::{Add, Div, Mul, Sub};
 use word::Word;
 
 const SIZE: usize = 24;
-const PROG_SIZE: usize = 1000;
 
 #[derive(Debug)]
 enum MachineErr {
@@ -87,9 +86,12 @@ impl<const T: usize> Machine<T> {
                     return Err(MachineErr::StackUnderflow);
                 }
 
-                let temp = self.stack[self.sp - 1 - v];
-                self.stack[self.sp - 1 - v] = self.stack[self.sp - 1];
-                self.stack[self.sp - 1] = temp;
+                let a = self.sp - 1;
+                let b = self.sp - 1 - v;
+
+                let t = self.stack[a];
+                self.stack[a] = self.stack[b];
+                self.stack[b] = t;
 
                 self.ip += 1;
 
@@ -145,7 +147,7 @@ impl<const T: usize> Machine<T> {
                 let b = self.stack[self.sp - 1];
                 self.sp -= 1;
 
-                self.stack[self.sp] = a.sub(b).unwrap();
+                self.stack[self.sp] = b.sub(a).unwrap();
                 self.sp += 1;
                 self.ip += 1;
 
@@ -162,7 +164,7 @@ impl<const T: usize> Machine<T> {
                 let b = self.stack[self.sp - 1];
                 self.sp -= 1;
 
-                self.stack[self.sp] = a.mul(b).unwrap();
+                self.stack[self.sp] = b.mul(a).unwrap();
                 self.sp += 1;
                 self.ip += 1;
 
@@ -179,7 +181,7 @@ impl<const T: usize> Machine<T> {
                 let b = self.stack[self.sp - 1];
                 self.sp -= 1;
 
-                self.stack[self.sp] = a.div(b).unwrap();
+                self.stack[self.sp] = b.div(a).unwrap();
                 self.sp += 1;
                 self.ip += 1;
 
@@ -213,7 +215,7 @@ impl<const T: usize> Machine<T> {
                 let b = self.stack[self.sp - 1];
                 self.sp -= 1;
 
-                self.stack[self.sp] = a.sub(b).unwrap();
+                self.stack[self.sp] = b.sub(a).unwrap();
                 self.sp += 1;
                 self.ip += 1;
 
@@ -230,7 +232,7 @@ impl<const T: usize> Machine<T> {
                 let b = self.stack[self.sp - 1];
                 self.sp -= 1;
 
-                self.stack[self.sp] = a.mul(b).unwrap();
+                self.stack[self.sp] = b.mul(a).unwrap();
                 self.sp += 1;
                 self.ip += 1;
 
@@ -247,7 +249,7 @@ impl<const T: usize> Machine<T> {
                 let b = self.stack[self.sp - 1];
                 self.sp -= 1;
 
-                self.stack[self.sp] = a.div(b).unwrap();
+                self.stack[self.sp] = b.div(a).unwrap();
                 self.sp += 1;
                 self.ip += 1;
 
@@ -261,12 +263,17 @@ impl<const T: usize> Machine<T> {
             }
 
             Ins::JumpIf(v) => {
+                if self.sp < 1 {
+                    return Err(MachineErr::StackUnderflow);
+                }
+
                 if self.stack[self.sp - 1].is_true() {
-                    self.sp -= 1;
                     self.ip = v;
                 } else {
                     self.ip += 1;
                 }
+
+                self.sp -= 1;
 
                 Ok(())
             }
@@ -294,6 +301,8 @@ impl<const T: usize> Machine<T> {
     }
 
     fn dump(&self) {
+        let ins = self.program[self.ip - 1];
+        println!("{ins:?}");
         print!("STACK: [");
         for i in 0..self.sp {
             print!("{:?}, ", self.stack[i]);
@@ -330,27 +339,52 @@ fn read_source_file(sf: &str) -> Vec<Ins> {
 }
 
 fn main() {
-    let mut e = std::env::args().into_iter();
+    let mut args = std::env::args().into_iter();
 
-    let file_name = e.nth(1);
+    let mut file_name = String::new();
+    let mut limit = -1;
+    let mut debug = false;
 
-    if file_name.is_none() {
+    for arg in args {
+        if arg.ends_with(".vm") {
+            file_name = arg.clone();
+        }
+
+        if arg.starts_with("-l=") {
+            eprintln!("USAGE: -l=limit");
+            limit = arg.replace("-l=", "").parse::<i32>().unwrap();
+        }
+
+        if arg == "-d" {
+            eprintln!("USAGE: debug, -d");
+            debug = true;
+        }
+    }
+
+    if file_name.len() < 3 || limit == -1 {
         eprintln!("USAGE: ./stack_machine *.vm");
+        eprintln!("USAGE: -l=limit");
+        eprintln!("USAGE: debug,  -d");
         eprintln!("ERROR: Expect a input");
+
         return;
     }
 
-    let prog = read_source_file(&file_name.unwrap());
+    let prog = read_source_file(&file_name);
 
     let mut m = Machine::<SIZE>::new(prog);
 
-    for _ in 0..PROG_SIZE {
+    for _ in 0..limit {
         if m.halt {
             break;
         }
 
         match m.step() {
-            Ok(()) => m.dump(),
+            Ok(()) => {
+                if debug {
+                    m.dump();
+                }
+            }
             Err(e) => {
                 eprintln!("Error: {:?}", e);
                 break;

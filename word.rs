@@ -81,7 +81,7 @@ impl Mul for Word {
     fn mul(self, other: Word) -> Result<Self, String> {
         match (self, other) {
             (Word::Int(a), Word::Int(b)) => Ok(Word::Int(a * b)),
-            (Word::Float(a), Word::Float(b)) => Ok(Word::Float(a * b)),
+            (Word::Float(a), Word::Float(b)) => Ok(Word::Float(round_to_ten_digits(a * b))),
             _ => Err(format!(
                 "Error: Operation Mul not supported yet for {:?} {:?}",
                 self, other
@@ -95,12 +95,18 @@ impl Div for Word {
 
     fn div(self, other: Word) -> Result<Self, String> {
         match (self, other) {
-            (Word::Int(a), Word::Int(b)) => Ok(Word::Int(a / b)),
-            (Word::Float(a), Word::Float(b)) => Ok(Word::Float(a / b)),
+            (Word::Int(b), Word::Int(a)) => Ok(Word::Int(b / a)),
+            (Word::Float(b), Word::Float(a)) => Ok(Word::Float(round_to_ten_digits(b / a))),
             _ => Err(format!(
                 "Error: Operation Div not supported yet for {:?} {:?}",
                 self, other
             )),
         }
     }
+}
+
+fn round_to_ten_digits(num: f64) -> f64 {
+    // println!("{num}");
+    let factor = 10f64.powi(10);
+    (num * factor).round() / factor
 }
