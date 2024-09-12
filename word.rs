@@ -8,7 +8,7 @@ pub enum Word {
     Float(f64),
     Boolean(bool),
     Int(i64),
-    Usize(usize),
+    // Usize(usize),
 }
 
 impl Word {
@@ -16,7 +16,7 @@ impl Word {
         match self {
             Word::Float(x) => *x > 0.0,
             Word::Int(x) => *x > 0,
-            Word::Usize(x) => *x > 0,
+            // Word::Usize(x) => *x > 0,
             Word::Boolean(x) => *x,
         }
     }
@@ -27,7 +27,7 @@ impl Display for Word {
         match self {
             Word::Float(x) => write!(f, "{}", x),
             Word::Int(x) => write!(f, "{}", x),
-            Word::Usize(x) => write!(f, "{}", x),
+            // Word::Usize(x) => write!(f, "{}", x),
             Word::Boolean(x) => write!(f, "{}", x),
         }
     }
@@ -106,7 +106,6 @@ impl Div for Word {
 }
 
 fn round_to_ten_digits(num: f64) -> f64 {
-    // println!("{num}");
     let factor = 10f64.powi(10);
     (num * factor).round() / factor
 }

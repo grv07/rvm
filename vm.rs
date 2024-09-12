@@ -302,12 +302,13 @@ impl<const T: usize> Machine<T> {
 
     fn dump(&self) {
         let ins = self.program[self.ip - 1];
-        println!("{ins:?}");
+        let f = format!("{:?}", ins);
+        print!("{f:20}");
         print!("STACK: [");
         for i in 0..self.sp {
             print!("{:?}, ", self.stack[i]);
         }
-        print!("]");
+        println!("]");
 
         println!("");
     }
@@ -339,7 +340,7 @@ fn read_source_file(sf: &str) -> Vec<Ins> {
 }
 
 fn main() {
-    let mut args = std::env::args().into_iter();
+    let args = std::env::args().into_iter();
 
     let mut file_name = String::new();
     let mut limit = -1;
